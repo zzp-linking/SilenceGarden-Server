@@ -1,12 +1,8 @@
+import { REGISTER } from '../config/url.js';
+import { uuid } from '../utils/uuid.js';
+import { mockWrap } from '../utils/net.js';
 
-import { REGISTER }  from "../config/url";
-import { uuid } from '../utils/uuid'
-import { mockWrap } from '../utils/net'
-
-
-
-
-module.exports = function(app){
+export default function(app){
     app.post(REGISTER, function (req, res) {
 		
 		console.log(uuid())

@@ -3,14 +3,14 @@ export const MONGODB_USER = 'zzp' //数据库账号
 export const MONGODB_PWD = 'my_garden' //数据库密码
 export const MONGODB_IP = '127.0.0.1'  //数据库IP
 export const MONGODB_PORT = '27017' //数据库端口
-export const MONGODB_DB = '' //连接数据库
+export const MONGODB_DB = 'silencegarden' //连接数据库
 
 // 测试环境
 // export const MONGODB_USER = 'zzp' //数据库账号
 // export const MONGODB_PWD = 'my_garden' //数据库密码
-//export const MONGODB_IP = '47.96.93.131'  //数据库IP
+// export const MONGODB_IP = '47.117.90.95'  //数据库IP
 // export const MONGODB_PORT = '27017' //数据库端口
-// export const MONGODB_DB = '' //连接数据库
+// export const MONGODB_DB = 'silencegarden' //数据库名称
 // 阿里云
 //export const MONGODB_IP = '47.98.129.238'  //数据库IP
 

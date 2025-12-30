@@ -1,9 +1,20 @@
 .DS_Store
 node_modules/
 /dist/
+
+# Lock files
+package-lock.json
+yarn.lock
+
+# PM2 logs
+logs/
+*.log
+.pm2/
+
+# Debug logs
 npm-debug.log*
 yarn-debug.log*
-yarn-error.log*
+pnpm-debug.log*
 
 # Editor directories and files
 .idea

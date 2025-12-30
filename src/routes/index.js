@@ -1,13 +1,12 @@
-var poetry = require("./poetry");
-var violin = require("./violin");
-var article = require("./article");
-var login = require("./login");
-import { resultWrap } from '../utils/net'
+import poetry from './poetry.js';
+import violin from './violin.js';
+import article from './article.js';
+import login from './login.js';
+import { resultWrap } from '../utils/net.js';
+import { authVali } from '../utils/auth.js';
+import { BASEURL, AUTH } from '../config/url.js';
 
-import { authVali } from '../utils/auth'
-import { BASEURL, AUTH } from '../config/url'
-
-module.exports =  function(app){
+export default function(app){
 	app.all(BASEURL + AUTH + '/*', async function (req, res , next) {
 		var url = req.originalUrl;
 		console.log('拦截器————————————————————————————', url)

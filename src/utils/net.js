@@ -1,10 +1,13 @@
-
 export const resultWrap = (datas, msg = '成功', type = 200 ) => {
 	return {
 		code: type,
 		message: msg,
 		result: Array.isArray(datas) ? { list: datas } : datas
 	}
+}
+
+export const mockWrap = (datas) => {
+	return datas;
 }
 
 export const onanaly = (obj) => {

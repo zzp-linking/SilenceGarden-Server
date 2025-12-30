@@ -1,6 +1,5 @@
-
-import { SMSCODE, PHONECODEVALI, RESETPWD }  from "../config/url";
-import { mockWrap } from '../utils/net'
+import { SMSCODE, PHONECODEVALI, RESETPWD } from '../config/url.js';
+import { mockWrap } from '../utils/net.js';
 
 function getRandomIntInclusive(min, max) {
   min = Math.ceil(min);
@@ -9,7 +8,7 @@ function getRandomIntInclusive(min, max) {
 }
 
 
-module.exports = function(app){
+export default function(app){
     app.post(SMSCODE, function (req, res) {
 
 		const {account, state} = req.body

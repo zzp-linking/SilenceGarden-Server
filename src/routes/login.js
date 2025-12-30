@@ -1,36 +1,38 @@
-import { LOGIN }  from "../config/url";
-import { pool } from '../utils/db'
-import { resultWrap } from '../utils/net'
-import Mock from 'mockjs'
-const assert = require('assert');
+import { LOGIN } from '../config/url.js';
+import { pool } from '../utils/db.js';
+import { resultWrap } from '../utils/net.js';
+import Mock from 'mockjs';
 
-module.exports = function(app){
-    app.post(LOGIN, function (req, res) {
-		console.log('登录')
-		const {account, password} = req.body
+export default function(app){
+    app.post(LOGIN, async function (req, res) {
+		console.log('登录');
+		const { account, password } = req.body;
 		const { uuid } = Mock.mock({
 			uuid: '@guid'
-		})
-		const resourcePromise = pool.acquire();
-		resourcePromise.then(async function(db) {
-			const co = db.db('silencegarden').collection('user')
-			const obj = await new Promise((resolve,reject) => {
-				co.updateOne({ account, password }, { $set: { uuid } }, function(err, result) {
-					if (err) {
-						reject()
-					} else if (result.result.n === 1) {
-						resolve(resultWrap({ uuid }, '登录成功！'))
-					} else {
-						resolve(resultWrap({}, '账号或密码错误！', false))
-					}
-				})
-			})
-			pool.release(db);
-			res.send(obj)
-		}).catch(function(err) {
-		    res.send(resultWrap({}, '系统异常，请稍后再试', false))
 		});
-
-	})
+		
+		let client;
+		try {
+			client = await pool.acquire();
+			const co = client.db('silencegarden').collection('user');
+			
+			// 更新用户的 uuid
+			const result = await co.updateOne(
+				{ account, password },
+				{ $set: { uuid } }
+			);
+			
+			if (result.matchedCount === 1) {
+				res.send(resultWrap({ uuid }, '登录成功！'));
+			} else {
+				res.send(resultWrap({}, '账号或密码错误！', false));
+			}
+		} catch (err) {
+			console.error('登录失败:', err);
+			res.send(resultWrap({}, '系统异常，请稍后再试', false));
+		} finally {
+			if (client) pool.release(client);
+		}
+	});
 
 };

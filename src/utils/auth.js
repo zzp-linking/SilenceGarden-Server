@@ -1,4 +1,4 @@
-import { pool } from './db'
+import { pool } from './db.js';
 
 
 // 根据uuid，临时密钥访问, 用于权限管理

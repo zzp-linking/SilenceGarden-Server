@@ -1,11 +1,7 @@
-/*var express = require('express');*/
-
-
-import express from 'express'
-var bodyParser = require('body-parser');
-var cookieParser = require('cookie-parser')
-
-var routes = require("./routes");
+import express from 'express';
+import bodyParser from 'body-parser';
+import cookieParser from 'cookie-parser';
+import routes from './routes/index.js';
 
 var app = express();
 

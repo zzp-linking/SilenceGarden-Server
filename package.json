@@ -2,12 +2,14 @@
   "name": "silencegarden-server",
   "version": "1.0.0",
   "description": "silencegarden server simulation datas",
-  "main": "index.js",
+  "type": "module",
+  "main": "dist/app.js",
   "scripts": {
-    "dev": "babel-node src/index.js",
-    "start": "nodemon src/index.js --exec babel-node --presets es2015,stage-2",
-    "build": "babel src -d dist --presets es2015,stage-2",
-    "build-compress": "webpack"
+    "dev": "nodemon src/index.js",
+    "dev:watch": "node --watch src/index.js",
+    "start": "node dist/app.js",
+    "build": "node esbuild.config.js",
+    "kill": "npx kill-port 4000"
   },
   "keywords": [
     "silencegarden"
@@ -15,27 +17,16 @@
   "author": "zzp",
   "license": "MIT",
   "dependencies": {
-    "body-parser": "^1.17.2",
-    "cookie-parser": "^1.4.3",
-    "express": "^4.15.4",
-    "formidable": "^1.2.1",
-    "generic-pool": "^3.4.2",
-    "mongodb": "^3.0.5"
+    "body-parser": "^1.20.3",
+    "cookie-parser": "^1.4.7",
+    "express": "^4.21.2",
+    "formidable": "^3.5.2",
+    "generic-pool": "^3.9.0",
+    "mongodb": "^6.12.0"
   },
   "devDependencies": {
-    "babel-cli": "^6.26.0",
-    "babel-core": "^6.26.0",
-    "babel-loader": "^7.1.4",
-    "babel-plugin-transform-es2015-destructuring": "^6.23.0",
-    "babel-plugin-transform-es2015-modules-commonjs": "^6.26.0",
-    "babel-plugin-transform-es2015-parameters": "^6.24.1",
-    "babel-plugin-transform-es2015-spread": "^6.22.0",
-    "babel-plugin-transform-runtime": "^6.23.0",
-    "babel-plugin-transform-strict-mode": "^6.24.1",
-    "json-loader": "^0.5.7",
-    "mockjs": "^1.0.1-beta3",
-    "nodemon": "^1.17.3",
-    "webpack": "^4.5.0",
-    "webpack-cli": "^2.0.14"
+    "esbuild": "^0.24.2",
+    "mockjs": "^1.1.0",
+    "nodemon": "^3.1.9"
   }
 }

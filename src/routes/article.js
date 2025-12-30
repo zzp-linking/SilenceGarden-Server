@@ -9,42 +9,103 @@ import { ObjectId } from 'mongodb';
 
 export default function (app) {
 
-	// 新增文章和修改文章
+	// 新增文章和修改文章（带重试机制）
 	app.post(ARTICLE_SAVE, async function (req, res) {
-		console.log('文章保存：');
+		console.log('📝 文章保存开始：');
 		const { id, title, tags, markdown, html } = req.body;
+		console.log(`  - 操作类型: ${id ? '更新' : '新增'}`);
+		console.log(`  - 标题: ${title}`);
+		console.log(`  - 内容大小: markdown=${markdown?.length || 0} bytes, html=${html?.length || 0} bytes`);
 		
-		let client;
-		try {
-			client = await pool.acquire();
-			const dbo = client.db("silencegarden");
-			const collection = dbo.collection("article");
-			
-			if (id) {
-				// 更新文章
-				await collection.updateOne(
-					{ _id: new ObjectId(id) },
-					{ $set: { title, tags, markdown, html } }
-				);
-				res.send(resultWrap({}));
-			} else {
-				// 新增文章
-				const result = await collection.insertOne({
-					title,
-					tags,
-					markdown,
-					html,
-					time: new Date()
-				});
-				res.send(resultWrap({ id: result.insertedId }));
+		// 重试逻辑
+		const maxRetries = 3;
+		let lastError;
+		
+		for (let attempt = 1; attempt <= maxRetries; attempt++) {
+			let client;
+			try {
+				console.log(`🔌 [尝试 ${attempt}/${maxRetries}] 正在获取数据库连接...`);
+				client = await pool.acquire();
+				console.log('✅ 连接获取成功');
+				
+				// 先测试连接
+				await client.db("silencegarden").command({ ping: 1 });
+				console.log('✅ 连接验证通过');
+				
+				const dbo = client.db("silencegarden");
+				const collection = dbo.collection("article");
+				
+				if (id) {
+					// 更新文章
+					console.log(`📝 正在更新文章 ID: ${id}`);
+					const result = await collection.updateOne(
+						{ _id: new ObjectId(id) },
+						{ $set: { title, tags, markdown, html, updateTime: new Date() } }
+					);
+					console.log(`✅ 更新完成: 匹配=${result.matchedCount}, 修改=${result.modifiedCount}`);
+					res.send(resultWrap({ updated: true, matchedCount: result.matchedCount }));
+				} else {
+					// 新增文章
+					console.log('📝 正在插入新文章...');
+					const result = await collection.insertOne({
+						title,
+						tags,
+						markdown,
+						html,
+						time: new Date()
+					});
+					console.log(`✅ 插入完成，新文章 ID: ${result.insertedId}`);
+					res.send(resultWrap({ id: result.insertedId }));
+				}
+				
+				// 成功则返回
+				return;
+				
+			} catch (err) {
+				lastError = err;
+				console.error(`❌ [尝试 ${attempt}/${maxRetries}] 文章保存失败！`);
+				console.error('错误类型:', err.name);
+				console.error('错误消息:', err.message);
+				console.error('错误代码:', err.code);
+				
+				// 如果是最后一次尝试或不可重试的错误，直接失败
+				if (attempt === maxRetries || 
+				    err.message.includes('not authorized') ||
+				    err.message.includes('duplicate key')) {
+					console.error('完整错误:', err);
+					break;
+				}
+				
+				// 否则等待后重试
+				console.log(`⏳ 等待 ${attempt} 秒后重试...`);
+				await new Promise(resolve => setTimeout(resolve, attempt * 1000));
+				
+			} finally {
+				if (client) {
+					console.log('🔓 释放数据库连接');
+					try {
+						pool.release(client);
+					} catch (e) {
+						console.error('释放连接失败:', e.message);
+					}
+				}
 			}
-			console.log('插入、更新文档完成');
-		} catch (err) {
-			console.error('文章保存失败:', err);
-			res.send(resultWrap({}, '系统异常，请稍后再试', false));
-		} finally {
-			if (client) pool.release(client);
 		}
+		
+		// 所有重试都失败
+		console.error('❌ 所有重试均失败');
+		let errorMsg = '系统异常，请稍后再试';
+		if (lastError.message.includes('not authorized')) {
+			errorMsg = '没有写入权限';
+		} else if (lastError.code === 'ECONNREFUSED') {
+			errorMsg = '数据库连接失败';
+		} else if (lastError.name === 'MongoNetworkError') {
+			errorMsg = '网络连接失败，请检查网络';
+		} else if (lastError.name === 'MongoServerError') {
+			errorMsg = '数据库服务器错误: ' + lastError.message;
+		}
+		
+		res.send(resultWrap({}, errorMsg, false));
 	});
 
 	// 获取文章目录

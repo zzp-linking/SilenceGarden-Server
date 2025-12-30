@@ -9,7 +9,9 @@
     "dev:watch": "node --watch src/index.js",
     "start": "node dist/app.js",
     "build": "node esbuild.config.js",
-    "kill": "npx kill-port 4000"
+    "kill": "npx kill-port 4000",
+    "test:db": "node test-mongodb-connection.js",
+    "test:write": "node test-mongodb-write.js"
   },
   "keywords": [
     "silencegarden"

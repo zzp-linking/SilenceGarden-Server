@@ -7,27 +7,71 @@ import { resultWrap } from '../utils/net.js';
 const url = `mongodb://${MONGODB_USER}:${MONGODB_PWD}@${MONGODB_IP}:${MONGODB_PORT}/${MONGODB_DB}?authSource=admin`;
 
 const pool = generic.createPool({
-    'name': 'mongodb-pool',   // 连接池名称
-    'max': 100,             // 最大连接数           
-    'min': 5,               // 最小连接数  
-    'idleTimeoutMillis': 30 * 1000,// 空闲等待时间
-    'log': false,           // 是否console.log输出日志
-    // 创建连接方法
+    'name': 'mongodb-pool',
+    'max': 50,              // 减少最大连接数
+    'min': 2,               // 减少最小连接数
+    'idleTimeoutMillis': 60000,  // 增加空闲超时到60秒
+    'acquireTimeoutMillis': 10000, // 获取连接超时10秒
+    'evictionRunIntervalMillis': 10000, // 每10秒清理一次
+    'testOnBorrow': true,   // 借用时测试连接
+    'log': false,
+    
+    // 创建连接
     'create': async function () {
         try {
-            // MongoDB 6.x 使用新的连接方式
-            const client = new MongoClient(url);
+            const client = new MongoClient(url, {
+                maxPoolSize: 10,        // MongoDB 客户端自己的连接池
+                minPoolSize: 2,
+                maxIdleTimeMS: 60000,
+                serverSelectionTimeoutMS: 10000,
+                socketTimeoutMS: 60000,  // 增加到60秒
+                connectTimeoutMS: 10000,
+                heartbeatFrequencyMS: 10000,
+                retryWrites: true,       // 启用重试写入
+                w: 'majority',           // 写关注级别
+            });
+            
             await client.connect();
-            console.log('✅ MongoDB 连接成功');
+            
+            // 验证连接
+            const result = await client.db(MONGODB_DB).command({ ping: 1 });
+            if (result.ok !== 1) {
+                throw new Error('Ping failed');
+            }
+            
+            console.log('✅ MongoDB 连接池创建新连接');
             return client;
         } catch (err) {
-            console.error('❌ MongoDB 连接失败:', err);
+            console.error('❌ MongoDB 连接失败:', err.message);
             throw err;
         }
     },
-    // 销毁方法
-    'destroy': function (client) {
-        return client.close();
+    
+    // 验证连接是否有效（借用时调用）
+    'validate': async function (client) {
+        try {
+            // 使用 ping 命令快速验证
+            const result = await Promise.race([
+                client.db(MONGODB_DB).command({ ping: 1 }),
+                new Promise((_, reject) => 
+                    setTimeout(() => reject(new Error('Validation timeout')), 3000)
+                )
+            ]);
+            return result.ok === 1;
+        } catch (err) {
+            console.warn('⚠️  连接验证失败，将创建新连接:', err.message);
+            return false;
+        }
+    },
+    
+    // 销毁连接
+    'destroy': async function (client) {
+        try {
+            await client.close(true); // 强制关闭
+            console.log('🔓 连接已销毁');
+        } catch (err) {
+            console.error('关闭连接失败:', err.message);
+        }
     }
 });
 
